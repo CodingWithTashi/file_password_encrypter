@@ -1,0 +1,23 @@
+{
+    "name": "File Password Encrypter",
+    "description": "Your file just got safer, select a file and encrypt with password",
+    "manifest_version": 3,
+    "version": "1.0.0",
+    "background": {
+        "service_worker": "background.js"
+    },
+    "author": "KharagEdition",
+    "action": {
+        "default_icon": {
+            "16": "assets/icon16.png",
+            "24": "assets/icon24.png",
+            "32": "assets/icon32.png"
+        },
+        "default_popup": "popup/popup.html"
+    },
+    "icons": {
+        "16": "assets/icon16.png",
+        "48": "assets/icon48.png",
+        "128": "assets/icon128.png"
+    }
+}
