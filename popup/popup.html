@@ -9,6 +9,8 @@
 
     <script src="popup.js" defer></script>
     <style src="popup.css" defer></style>
+    <script src="../openpgp.min.js" defer></script>
+
     <style>
         input[type=search]::-webkit-search-cancel-button {
             -webkit-appearance: searchfield-cancel-button;
@@ -38,19 +40,19 @@
                 <hr>
                 <div>
                     <label for="search_word_input" style="margin:0px">Rename file (Optional)</label>
-                    <input type="search" class="form-control" id="rename_file_input" placeholder="Eg. test"><small
+                    <input type="search" class="form-control" id="rename-file-input" placeholder="Eg. test"><small
                         id="emailHelp" class="form-text text-muted">Rename file if require</small>
 
                 </div>
                 <hr>
                 <div>
                     <label for="search_word_input" style="margin:0px">Password <span style="color:red">*</span></label>
-                    <input type="password" class="form-control" id="pwd_input" placeholder="Required"><small
+                    <input type="password" class="form-control" id="pwd-input" placeholder="Required"><small
                         class="form-text text-muted" type="password">Enter password for file</small>
-                    <button class="btn btn-success btn-sm" style="margin-top:5px" id="encrypt_file_btn">
+                    <button class="btn btn-success btn-sm" style="margin-top:5px" id="encrypt-file-btn">
                         <i class="fa fa-lock"></i> | Encrypt
                         File</button>
-                    <button class="btn btn-success btn-sm" style="margin-top:5px" id="decrypt_file_btn">
+                    <button class="btn btn-success btn-sm" style="margin-top:5px" id="decrypt-file-btn">
                         <i class="fa fa-unlock"></i> | Decrypt
                         File</button>
                 </div>
