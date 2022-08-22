@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
           });
           console.log(encrypted); // Uint8Array
 
-          downloadBlob(encrypted, fileNameTxt + ".pdf", "application/pdf");
+          downloadBlob(encrypted, fileNameTxt + ".enc", "application/pdf");
         })();
       }
 
