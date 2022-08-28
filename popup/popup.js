@@ -1,4 +1,4 @@
-var uint8Array;
+var selectedFile;
 document.addEventListener("DOMContentLoaded", function (event) {
   //Used Port\Long Lived Connection for communicating with background page for fetching results
   //   var port = chrome.runtime.connect({
@@ -19,16 +19,8 @@ document.addEventListener("DOMContentLoaded", function (event) {
 
   //file picker listener
   document.getElementById("file_picker").onchange = function (event) {
-    var file = event.target.files[0];
-    console.log(file);
-    var reader = new FileReader();
-    reader.readAsArrayBuffer(file);
-
-    reader.addEventListener("load", (loadEvent) => {
-      var buffer = loadEvent.target.result;
-      uint8Array = new Uint8Array(buffer);
-      console.log(uint8Array);
-    });
+    selectedFile = event.target.files[0];
+    console.log(selectedFile);
   };
 
   //encrypt click listener
@@ -38,19 +30,29 @@ document.addEventListener("DOMContentLoaded", function (event) {
       var fileNameTxt = document.getElementById("rename-file-input").value;
       var pwdTxt = document.getElementById("pwd-input").value;
       //
-      if (uint8Array != undefined) {
-        (async () => {
-          const message = await openpgp.createMessage({ binary: uint8Array });
-          const encrypted = await openpgp.encrypt({
-            message, // input as Message object
-            passwords: [pwdTxt], // multiple passwords possible
-            format: "binary", // don't ASCII armor (for Uint8Array output)
-          });
-          console.log(encrypted); // Uint8Array
+      var reader = new FileReader();
 
-          downloadBlob(encrypted, fileNameTxt + ".enc", "application/pdf");
-        })();
-      }
+      reader.onload = () => {
+        var wordArray = CryptoJS.lib.WordArray.create(reader.result); // Convert: ArrayBuffer -> WordArray
+        if (
+          wordArray != undefined &&
+          pwdTxt != undefined &&
+          pwdTxt.length > 0
+        ) {
+          var encrypted = CryptoJS.AES.encrypt(wordArray, pwdTxt).toString(); // Encryption: I: WordArray -> O: -> Base64 encoded string (OpenSSL-format)
+
+          var fileEnc = new Blob([encrypted]);
+          var url = window.URL.createObjectURL(fileEnc);
+          var fileName = "";
+          if (fileNameTxt != undefined && fileNameTxt.length > 0) {
+            fileName = fileNameTxt + ".enc";
+          } else {
+            fileName = selectedFile.name + ".enc";
+          }
+          downloadFile(url, fileName);
+        }
+      };
+      reader.readAsArrayBuffer(selectedFile);
 
       //
     });
@@ -61,48 +63,54 @@ document.addEventListener("DOMContentLoaded", function (event) {
     .addEventListener("click", function () {
       var pwdTxt = document.getElementById("pwd-input").value;
       var fileNameTxt = document.getElementById("rename-file-input").value;
-
       //
-      if (uint8Array != undefined) {
-        (async () => {
-          const encryptedMessage = await openpgp.readMessage({
-            binaryMessage: uint8Array, // parse encrypted bytes
-          });
-          const { data: decrypted } = await openpgp.decrypt({
-            message: encryptedMessage,
-            passwords: [pwdTxt], // decrypt with password
-            format: "binary", // output as Uint8Array
-          });
-          console.log(decrypted); // Uint8Array([0x01, 0x01, 0x01])
-          downloadBlob(decrypted, fileNameTxt + ".pdf", "application/pdf");
-        })();
-      }
+      var reader = new FileReader();
+      reader.onload = () => {
+        if (pwdTxt != undefined && pwdTxt.length > 0) {
+          var decrypted = CryptoJS.AES.decrypt(reader.result, pwdTxt); // Decryption: I: Base64 encoded string (OpenSSL-format) -> O: WordArray
+          var typedArray = convertWordArrayToUint8Array(decrypted); // Convert: WordArray -> typed array
 
+          var fileDec = new Blob([typedArray]); // Create blob from typed array
+
+          var url = window.URL.createObjectURL(fileDec);
+          var fileName = "";
+          if (fileNameTxt != undefined && fileNameTxt.length > 0) {
+            fileName = fileNameTxt + ".pdf";
+          } else {
+            fileName = selectedFile.name.substr(
+              0,
+              selectedFile.name.length - 4
+            );
+          }
+          downloadFile(url, fileName);
+        }
+      };
+      reader.readAsText(selectedFile);
       //
     });
-
-  //download blob
-  function downloadBlob(data, fileName, mimeType) {
-    var blob, url;
-    blob = new Blob([data], {
-      type: mimeType,
-    });
-    url = window.URL.createObjectURL(blob);
-    downloadURL(url, fileName);
-    setTimeout(function () {
-      return window.URL.revokeObjectURL(url);
-    }, 1000);
-  }
-
-  //doenload url
-  function downloadURL(data, fileName) {
-    var a;
-    a = document.createElement("a");
-    a.href = data;
+  function downloadFile(url, fileName) {
+    var a = document.createElement("a");
+    a.href = url;
     a.download = fileName;
-    document.body.appendChild(a);
-    a.style = "display: none";
     a.click();
-    a.remove();
+    window.URL.revokeObjectURL(url);
+  }
+  function convertWordArrayToUint8Array(wordArray) {
+    var arrayOfWords = wordArray.hasOwnProperty("words") ? wordArray.words : [];
+    var length = wordArray.hasOwnProperty("sigBytes")
+      ? wordArray.sigBytes
+      : arrayOfWords.length * 4;
+    var uInt8Array = new Uint8Array(length),
+      index = 0,
+      word,
+      i;
+    for (i = 0; i < length; i++) {
+      word = arrayOfWords[i];
+      uInt8Array[index++] = word >> 24;
+      uInt8Array[index++] = (word >> 16) & 0xff;
+      uInt8Array[index++] = (word >> 8) & 0xff;
+      uInt8Array[index++] = word & 0xff;
+    }
+    return uInt8Array;
   }
 });
